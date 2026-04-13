@@ -11,7 +11,7 @@
 	<groupId>com.pravas</groupId>
 	<artifactId>student-management</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>student-management-system</name>
 	<description>Spring Boot CRUD project using Hibernate and PostgreSQL</description>
 	<url/>

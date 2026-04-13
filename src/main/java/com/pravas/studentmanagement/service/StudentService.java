@@ -1,56 +1,86 @@
 package com.pravas.studentmanagement.service;
 
-import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.pravas.studentmanagement.dto.StudentDTO;
 import com.pravas.studentmanagement.entity.Student;
+import com.pravas.studentmanagement.exception.DuplicateResourceException;
 import com.pravas.studentmanagement.exception.StudentNotFoundException;
 import com.pravas.studentmanagement.repository.StudentRepository;
+
+import java.util.List;
 
 @Service
 public class StudentService {
 
-	    @Autowired
-	    private StudentRepository repo;
+    @Autowired
+    private StudentRepository repo;
 
-	    // Save student
-	    public Student saveStudent(Student s) {
-	        return repo.save(s);
-	    }
+    // CREATE
+    public Student saveStudent(StudentDTO dto) {
 
-	    // Get all students
-	    public List<Student> getAllStudents() {
-	        return repo.findAll();
-	    }
+        // duplicate email check
+        if (repo.findByEmail(dto.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email already exists");
+        }
 
-	    // Get student by ID
-	    public Student getStudentById(int id) {
-	        return repo.findById(id).orElseThrow(() -> new StudentNotFoundException(id));
-	    }
+        Student student = mapToEntity(dto);
+        return repo.save(student);
+    }
 
-	    // Update student
-	    public Student updateStudent(int id, Student s) {
-	        Student existing = repo.findById(id)
-	                .orElseThrow(() -> new StudentNotFoundException(id));
+    // READ ALL
+    public List<Student> getAllStudents() {
+        return repo.findAll();
+    }
 
-	        existing.setName(s.getName());
-	        existing.setAge(s.getAge());
-	        existing.setEmail(s.getEmail());
-	        existing.setCourse(s.getCourse());
-	        existing.setFees(s.getFees());
-	        existing.setStatus(s.getStatus());
+    // COMMON METHOD (reuse everywhere)
+    private Student findStudentById(int id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new StudentNotFoundException(id));
+    }
 
-	        return repo.save(existing);
-	    }
+    // READ BY ID
+    public Student getStudentById(int id) {
+        return findStudentById(id);
+    }
 
-	    // Delete student
-	    public String deleteStudent(int id) {
-	        Student s = repo.findById(id)
-	                .orElseThrow(() -> new StudentNotFoundException(id));
+    // UPDATE (using DTO)
+    public Student updateStudent(int id, StudentDTO dto) {
 
-	        repo.delete(s);
-	        return "Student deleted successfully";
-	    }
-	}
+        Student existing = findStudentById(id);
+
+        // check if email is changing
+        if (!existing.getEmail().equals(dto.getEmail()) &&
+                repo.findByEmail(dto.getEmail()).isPresent()) {
+            throw new DuplicateResourceException("Email already exists");
+        }
+
+        existing.setName(dto.getName());
+        existing.setAge(dto.getAge());
+        existing.setEmail(dto.getEmail());
+        existing.setCourse(dto.getCourse());
+        existing.setFees(dto.getFees());
+        existing.setStatus(dto.getStatus());
+
+        return repo.save(existing);
+    }
+
+    // DELETE
+    public void deleteStudent(int id) {
+        Student student = findStudentById(id);
+        repo.delete(student);
+    }
+
+    // MAPPING METHOD
+    private Student mapToEntity(StudentDTO dto) {
+        Student student = new Student();
+        student.setName(dto.getName());
+        student.setAge(dto.getAge());
+        student.setEmail(dto.getEmail());
+        student.setCourse(dto.getCourse());
+        student.setFees(dto.getFees());
+        student.setStatus(dto.getStatus());
+        return student;
+    }
+}
